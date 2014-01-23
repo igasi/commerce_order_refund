@@ -99,7 +99,7 @@ function commerce_order_refund_form($form, &$form_state, $order, $transaction) {
  * Verifies that the payment has not already been reversed.
  */
 function commerce_order_refund_form_validate($form, &$form_state) {
-  if (isset($form_state['transaction']->data['reversed']) && $form_state['transaction']->data['reversed'] = TRUE) {
+  if (isset($form_state['transaction']->data['refunded']) && $form_state['transaction']->data['refunded'] = TRUE) {
     form_set_error('transaction', t('Transaction !id has already been reversed.', array('!id' => $form_state['transaction']->transaction_id)));
   }
 }
@@ -108,37 +108,9 @@ function commerce_order_refund_form_validate($form, &$form_state) {
  * Submit callback for the reverse payment form.
  */
 function commerce_order_refund_form_submit($form, &$form_state) {
-  commerce_reverse_payments_reverse_payment($form_state['transaction'], $form_state['values']['comment']);
+  //commerce_reverse_payments_reverse_payment($form_state['transaction'], $form_state['values']['comment']);
   drupal_set_message(t('Reversed payment %payment_id.', array('%payment_id' => $form_state['transaction']->transaction_id)));
 
   // Set the form redirect back to the payment page for the order.
   $form_state['redirect'] = 'admin/commerce/orders/' . $form_state['order']->order_id . '/payment';
 }
-
-/**
- * Reverse an existing transaction by creating a new transaction to offset it.
- *
- * @param stdClass $original_transaction
- *   Transaction to be reversed.
- * @param string $comment
- *   Comment explaining why the payment was reversed.
- */
-function commerce_reverse_payments_reverse_payment($original_transaction, $comment) {
-  // Create the reversing transaction.
-  $transaction = commerce_payment_transaction_new('reverse', $original_transaction->order_id);
-  $transaction->amount = ($original_transaction->amount * -1);
-  $transaction->currency_code = $original_transaction->currency_code;
-  $transaction->data['original_transaction'] = $original_transaction->transaction_id;
-  $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-  $transaction->message = t('Reversed payment %payment_id.', array('%payment_id' => $original_transaction->transaction_id)) . '<br />' .
-    '<b>' . t('Comment:') . '</b> ' . nl2br(check_plain($comment));
-
-  // Save the transaction.
-  commerce_payment_transaction_save($transaction);
-
-  // Indicate that the original transaction has been reversed.
-  $original_transaction->data['reversed'] = TRUE;
-  commerce_payment_transaction_save($original_transaction);
-
-  // Let rules and other modules know that the payment has been reversed.
-  rules_invoke_all('commerce_reverse_payments_payment_reversed', $original_transaction, $transaction);
