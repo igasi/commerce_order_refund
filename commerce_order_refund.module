@@ -1,0 +1,51 @@
+<?php
+/**
+ * @file
+ * Implements orders refunds for Drupal Commerce.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_order_refund_menu() {
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/order_refund'] = array(
+    'title' => 'Order refund',
+    'page callback' => 'commerce_order_refund_form_wrapper',
+    //'page arguments' => array(3, 5),
+    'access callback' => 'commerce_payment_transaction_access',
+    'access arguments' => array('update', 5),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 10,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_contextual_links_alter().
+ *
+ * Remove the order refund link from the transaction operations if the transaction
+ * can not be reversed.
+ */
+function commerce_order_refund_menu_contextual_links_alter(&$links, $router_item, $root_path) {
+  /*
+  if (isset($links['commerce-payment-transaction-reverse'])) {
+    if (!commerce_order_refund_transaction_reversible($router_item['page_arguments'][1])) {
+      unset($links['commerce-payment-transaction-reverse']);
+    }
+  }
+  */
+}
+
+/**
+ * Page callback for the reverse payment page.
+ */
+function commerce_order_refund_form_wrapper($order, $transaction) {
+  // Add the breadcrumb for the form's location.
+
+  //*commerce_payment_ui_set_order_breadcrumb($order);
+  return echo "Aleluya";
+
+  //*return drupal_get_form('commerce_reverse_payments_reverse_form', $order, $transaction);
+}
