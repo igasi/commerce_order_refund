@@ -125,9 +125,13 @@ function commerce_order_refund_form_submit($form, &$form_state) {
  *   Comment explaining why the payment was refunded.
  */
 function commerce_order_refund_execute($order_id,$original_transaction, $comment) {
-  $order_loaded = commerce_order_load($order_id);
-  drupal_set_message("<pre>" . print_r($order_loaded, 1) . "</pre>");
+  $entity_type = 'commerce_order';
 
+  $order_loaded = commerce_order_load($order_id);
+  drupal_set_message("<pre> Order loaded:" . print_r($order_loaded, 1) . "</pre>");
+
+  $order_cloned = entity_ui_clone_entity($entity_type, $order_loaded);
+  drupal_set_message("<pre> Order cloned:" . print_r($order_cloned, 1) . "</pre>");
 
   /*
   // Create the reversing transaction.
