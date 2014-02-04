@@ -129,13 +129,26 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
   global $user;
   $entity_type = 'commerce_order';
 
+  //
+  $line_items_order_to_refund = $order->commerce_line_items;
+
+  foreach ($line_items_order_to_refund as $line_item => $value) {
+    # code...
+    $li[$line_item->id] = commerce_line_item_load($line_item->id);
+  }
+
+
+  drupal_set_message("<pre> Order to refund:" . print_r($order, 1) . "</pre>");
+  drupal_set_message("<pre> Line items:" . print_r($li, 1) . "</pre>");
+
+/*Wait for new line items
   //create a new order refunded
   $new_order = commerce_order_new( $user->uid , 'refunded' );
   // Save the order so its ID is assigned.
   commerce_order_save( $new_order );
 
-  drupal_set_message("<pre> Order cloned:" . print_r($new_order, 1) . "</pre>");
-
+  drupal_set_message("<pre> new order:" . print_r($new_order, 1) . "</pre>");
+*/
 
   /*
   // Create the reversing transaction.

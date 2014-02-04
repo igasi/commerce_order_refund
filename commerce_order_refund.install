@@ -16,7 +16,7 @@ function commerce_order_refund_install() {
 */
 function _commerce_order_refund_add_entity_reference_field(){
 
-$field_name = 'field_order_refund_reference';
+$field_name = 'order_refund_reference';
  
  // Make sure the field doesn't already exist.
  if (!field_info_field($field_name)) {
@@ -28,11 +28,11 @@ $field_name = 'field_order_refund_reference';
        'target_type' => 'commerce_order',
        'handler' => 'base',
        'handler_settings' => array(
-         'target_bundles' => array('associate')
+         'target_bundles' => array()
        ),
      ),
    );
-   
+
    field_create_field($field);
  
    // Create the instance.
@@ -81,7 +81,7 @@ function commerce_order_refund_uninstall() {
 */
 function _commerce_order_refund_delete_entity_reference_field(){
 //deletefield
-	$field_name = 'field_order_refund_reference';
+	$field_name = 'order_refund_reference';
 	$field = field_info_field($field_name);
 	if ( isset($field) ){
 		$result = db_truncate('field_data_'.$field_name)->execute();
