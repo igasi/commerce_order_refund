@@ -131,17 +131,35 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
 
   //Get pproducts to order refund
   $lis = $order->commerce_line_items['und'];
-  $profile_id = $order->profile_id['und'][0]['profile_id'];
+  $profile_id = $order->commerce_customer_billing['und'][0]['profile_id'];
 
   foreach ($lis as $li ){
     $lil[] = commerce_line_item_load($li['line_item_id']);
     $li_loaded = commerce_line_item_load($li['line_item_id']);
-    $products[] = array(
-      'type' => $li_loaded->type,
-      'product_id' => $li_loaded->commerce_product['und'][0]['product_id'],
-      'quantity' => ($li_loaded->quantity * -1)
-      );
+    //validate line item type
+    if ( $li_loaded->type == 'shipping' ){
+
+      $products[] = array(
+        'type' => $li_loaded->type,
+        'product_id' => NULL,
+        'shipping_name' => $li_loaded->commerce_shipping_service['und'][0]['value'],
+        'shipping_unit_price' => $li_loaded->commerce_unit_price['und'][0]['amount'],
+        'quantity' => ($li_loaded->quantity * -1)
+        );
+
+    }else if ( $li_loaded->type == 'product' ){
+
+      $products[] = array(
+        'type' => $li_loaded->type,
+        'product_id' => $li_loaded->commerce_product['und'][0]['product_id'],
+        'shipping_name' => NULL,
+        'shipping_unit_price' => NULL,
+        'quantity' => ($li_loaded->quantity * -1)
+        );
+
+    }
   }
+
 
 //  drupal_set_message("<pre> Order to refund:" . print_r($order, 1) . "</pre>");
 //  drupal_set_message("<pre> Line items:" . print_r($li, 1) . "</pre>");
@@ -155,13 +173,18 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
 
   foreach ($products as $product_to_refund) {
     if ($product_to_refund['type']=='product') {
-      $product = commerce_product_load ( $product_to_refund['product_id'] );
-    }else if ($product_to_refund['type']=='shipping') {
-      $product = array();
-    }
 
-    // Create a line item with quantity 1 and this product.
-    $line_item = commerce_product_line_item_new ( $product , $product_to_refund['quantity'] , $new_order->order_id );
+      $product = commerce_product_load ( $product_to_refund['product_id'] );
+      // Create a line item with  product.
+      $line_item = commerce_product_line_item_new( $product , $product_to_refund['quantity'] , $new_order->order_id );
+
+    }else if ($product_to_refund['type']=='shipping') {
+
+      $service = commerce_shipping_method_load($product_to_refund[$shipping_name]);
+      // Create a line item with  shipping.
+      $line_item = commerce_shipping_line_item_new($service, $product_to_refund[$shipping_unit_price], $new_order->order_id);
+
+    }
 
     // Save the line item to get its ID.
     commerce_line_item_save ( $line_item );
