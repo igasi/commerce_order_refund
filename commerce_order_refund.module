@@ -138,12 +138,12 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
     $li_loaded = commerce_line_item_load($li['line_item_id']);
     //validate line item type
     if ( $li_loaded->type == 'shipping' ){
-
+      $li_wrapper = entity_metadata_wrapper('commerce_line_item', $li_loaded);
       $products[] = array(
         'type' => $li_loaded->type,
         'product_id' => NULL,
         'shipping_name' => $li_loaded->commerce_shipping_service['und'][0]['value'],
-        'shipping_unit_price' => $li_loaded->commerce_unit_price['und'][0]['amount'],
+        'shipping_unit_price' => $li_wrapper->commerce_unit_price->value(),
         'quantity' => ($li_loaded->quantity * -1)
         );
 
@@ -190,19 +190,21 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
     commerce_line_item_save ( $line_item );
 
     // Add the line item to the order using the wrapper.
-    $order_wrapper->commerce_line_items[ ] = $line_item;
+    $order_wrapper->commerce_line_items[] = $line_item;
   }
+  //add order_id to refund
+  $order_wrapper->order_refund_reference->set(intval($order->order_id));
 
   //create the right array for the save controller
   $profile_object = array ( 
       'und' => array ( array ( 'profile_id' => $profile_id , ) , ) , ); 
 
-  $order->commerce_customer_billing = $profile_object;
+  $order_wrapper->commerce_customer_billing = $profile_object;
 
   // Save the order.
-  commerce_order_save ( $order );
+  $order_wrapper->save();
 
-  drupal_set_message("<pre> new order:" . print_r($new_order, 1) . "</pre>");
+  drupal_set_message("<pre> new order:" . print_r($order_wrapper, 1) . "</pre>");
 
 
   /*
