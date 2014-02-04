@@ -180,9 +180,9 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
 
     }else if ($product_to_refund['type']=='shipping') {
 
-      $service = commerce_shipping_method_load($product_to_refund[$shipping_name]);
+      $service = commerce_shipping_method_load($product_to_refund['shipping_name']);
       // Create a line item with  shipping.
-      $line_item = commerce_shipping_line_item_new($service, $product_to_refund[$shipping_unit_price], $new_order->order_id);
+      $line_item = commerce_shipping_line_item_new($service, $product_to_refund['shipping_unit_price'], $new_order->order_id);
 
     }
 
