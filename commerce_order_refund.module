@@ -209,7 +209,7 @@ function commerce_order_refund_execute($order, $comment) {
   //add order_id to refund
   $order_wrapper->order_refund_reference->set(intval($order->order_id));
   //add comment refund
-  $order_wrapper->comment_refund = $comment;
+  $order_wrapper->refund_comment = $comment;
   //add profile to billing and shipping information
   $order_wrapper->commerce_customer_billing = $profile_id;
   $order_wrapper->commerce_customer_shipping = $profile_id;
