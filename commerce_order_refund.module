@@ -13,7 +13,7 @@ function commerce_order_refund_menu() {
     'page callback' => 'commerce_order_refund_form_wrapper',
     'page arguments' => array(3, 5),
     'access callback' => 'commerce_payment_transaction_access',
-    'access arguments' => array('update', 5),
+    'access arguments' => array('order_refund_permission'),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
     'weight' => 10,
@@ -23,10 +23,21 @@ function commerce_order_refund_menu() {
 }
 
 /**
+ * Implements hook_menu().
+ */
+function commerce_order_refund_permission() {
+  return array(
+    'order_refund_permission' => array(
+      'Title' => 'Allow management orders refund'
+    )
+  );
+}
+
+/**
  * Implements hook_menu_contextual_links_alter().
  *
- * Remove the order refund link from the transaction operations if the transaction
- * can not be reversed.
+ * Remove the order refund link from the orders operations if the order
+ * can not be refunded.
  */
 function commerce_order_refund_menu_contextual_links_alter(&$links, $router_item, $root_path) {
   /*
@@ -98,9 +109,12 @@ function commerce_order_refund_form($form, &$form_state, $order, $transaction) {
  * Verifies that the payment has not already been reversed.
  */
 function commerce_order_refund_form_validate($form, &$form_state) {
-  if (isset($form_state['transaction']->data['refunded']) && $form_state['transaction']->data['refunded'] = TRUE) {
-    form_set_error('transaction', t('Transaction !id has already been refunded.', array('!id' => $form_state['transaction']->transaction_id)));
+  drupal_set_message("<pre> form:" . print_r($form, 1) . "</pre>");  
+  drupal_set_message("<pre> form_state:" . print_r($form_state, 1) . "</pre>");  
+  if ($form_state['order']->status == 'refunded' || $form_state['order']->status == 'refund') {
+    form_set_error('Order', t('Order !id has already been refunded.', array('!id' => $form_state['order']->order_id)));
   }
+
 }
 
 /**
@@ -108,23 +122,21 @@ function commerce_order_refund_form_validate($form, &$form_state) {
  */
 function commerce_order_refund_form_submit($form, &$form_state) {
   //commerce_reverse_payments_reverse_payment($form_state['transaction'], $form_state['values']['comment']);
-  commerce_order_refund_execute($form_state['order'],$form_state['transaction'], $form_state['values']['comment']);
-  drupal_set_message(t('Refunded payment %payment_id.', array('%payment_id' => $form_state['transaction']->transaction_id)));
+  commerce_order_refund_execute($form_state['order'], $form_state['values']['comment']);
+  drupal_set_message(t('Refunded order %order_id.', array('%order_id' => $form_state['order']->order_id)));
 
   // Set the form redirect back to the payment page for the order.
-  // comment for dev ----> $form_state['redirect'] = 'admin/commerce/orders/' . $form_state['order']->order_id . '/payment';
+  $form_state['redirect'] = 'admin/commerce/orders/' . $form_state['order']->order_id;
 }
 
 /**
  * Refund an existing order with transaction by creating a new transaction to offset it.
  * @param stdClass $order
  *   Transaction to be refunded.
- * @param stdClass $original_transaction
- *   Transaction to be refunded.
  * @param string $comment
  *   Comment explaining why the payment was refunded.
  */
-function commerce_order_refund_execute($order,$original_transaction, $comment) {
+function commerce_order_refund_execute($order, $comment) {
   
   global $user;
   $entity_type = 'commerce_order';
@@ -160,12 +172,8 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
     }
   }
 
-
-//  drupal_set_message("<pre> Order to refund:" . print_r($order, 1) . "</pre>");
-//  drupal_set_message("<pre> Line items:" . print_r($li, 1) . "</pre>");
-
-  //create a new order refunded
-  $new_order = commerce_order_new( $user->uid , 'refunded' );
+  //create a new order refund
+  $new_order = commerce_order_new( $user->uid , 'refund' );
   // Save the order so its ID is assigned.
   commerce_order_save( $new_order );
 
@@ -180,7 +188,6 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
 
     }else if ($product_to_refund['type']=='shipping') {
 
-      //$service = commerce_shipping_method_load($product_to_refund['shipping_name']);
       // Create a line item with  shipping.
       $line_item = commerce_shipping_line_item_new($product_to_refund['shipping_name'], $product_to_refund['shipping_unit_price'], $new_order->order_id);
 
@@ -194,17 +201,16 @@ function commerce_order_refund_execute($order,$original_transaction, $comment) {
   }
   //add order_id to refund
   $order_wrapper->order_refund_reference->set(intval($order->order_id));
-
-  //create the right array for the save controller
-  $profile_object = array ( 
-      'und' => array ( array ( 'profile_id' => $profile_id , ) , ) , ); 
-
-  $order_wrapper->commerce_customer_billing = $profile_object;
+  //add profile to billing and shipping information
+  $order_wrapper->commerce_customer_billing = $profile_id;
+  $order_wrapper->commerce_customer_shipping = $profile_id;
 
   // Save the order.
   $order_wrapper->save();
 
-  drupal_set_message("<pre> new order:" . print_r($order_wrapper, 1) . "</pre>");
+  //update status original order to refunded
+  commerce_order_status_update($order, 'refunded');
+  //drupal_set_message("<pre> new order:" . print_r($order_wrapper, 1) . "</pre>");
 
 
   /*
@@ -245,8 +251,17 @@ function commerce_order_refund_commerce_order_status_info(){
     'name' => 'refunded',
     'title' => t('Refunded'),
     'cart' => false,
-    'state' => 'refunded',
+    'state' => 'refund',
     'weight' => 10,
+    'status' => true
+    );
+
+$order_statuses['refund'] = array(
+    'name' => 'refund',
+    'title' => t('Refund'),
+    'cart' => false,
+    'state' => 'refund',
+    'weight' => 11,
     'status' => true
     );
 
@@ -259,11 +274,11 @@ function commerce_order_refund_commerce_order_status_info(){
  */
 
 function commerce_order_refund_commerce_order_state_info(){
-  $order_statuses['refunded'] = array(
-    'name' => 'refunded',
-    'title' => t('Refunded'),
+  $order_statuses['refund'] = array(
+    'name' => 'refund',
+    'title' => t('Refund'),
     'cart' => false,
-    'state' => 'refunded',
+    'state' => 'refund',
     'weight' => 10,
     'status' => true
     );
