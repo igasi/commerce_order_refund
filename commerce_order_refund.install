@@ -7,6 +7,7 @@
 
 function commerce_order_refund_install() {
 	
+	_commerce_order_refund_add_comment_refund();
 	_commerce_order_refund_add_entity_reference_field();
   	
 }
@@ -46,7 +47,53 @@ $field_name = 'order_refund_reference';
      'widget' => array(),
      'display' => array(
        'default' => array(
-         'label' => 'hidden',
+         'label' => 'inline',
+       ),
+     ),
+   );
+ 
+   field_create_instance($instance);
+   /*
+   drupal_set_message(t('!field_name was added successfully.', array(
+     '!field_name' => $field_name,
+   )));
+   */
+ }
+		
+}
+
+/**
+* Auxiliary function for create a comment refund field in order entity.
+*/
+function _commerce_order_refund_add_comment_refund(){
+
+$field_name = 'comment_refund';
+ 
+ // Make sure the field doesn't already exist.
+ if (!field_info_field($field_name)) {
+   // Create the field.
+   $field = array(
+     'field_name' => $field_name,
+     'type' => 'text',
+     'settings' => array(
+       'max_length' => 256,
+     ),
+   );
+
+   field_create_field($field);
+ 
+   // Create the instance.
+   $instance = array(
+     'field_name' => $field_name,
+     'entity_type' => 'commerce_order',
+     'bundle' => 'commerce_order',
+     'label' => 'Comment refund',
+     'description' => 'Provide a commerce order refund reference field',
+     'required' => FALSE,
+     'widget' => array(),
+     'display' => array(
+       'default' => array(
+         'label' => 'above',
        ),
      ),
    );
@@ -70,7 +117,8 @@ $field_name = 'order_refund_reference';
 
 function commerce_order_refund_uninstall() {
 
-	_commerce_order_refund_delete_entity_reference_field();
+	_commerce_order_refund_delete_entity_reference_field('comment_refund');
+	_commerce_order_refund_delete_entity_reference_field('order_refund_reference');
 
 }
 
@@ -79,9 +127,8 @@ function commerce_order_refund_uninstall() {
 /**
 * Function auxiliary for delete a taxonomy term field in order entity.
 */
-function _commerce_order_refund_delete_entity_reference_field(){
+function _commerce_order_refund_delete_entity_reference_field($field_name = null){
 //deletefield
-	$field_name = 'order_refund_reference';
 	$field = field_info_field($field_name);
 	if ( isset($field) ){
 		$result = db_truncate('field_data_'.$field_name)->execute();
