@@ -67,7 +67,7 @@ $field_name = 'order_refund_reference';
 */
 function _commerce_order_refund_add_comment_refund(){
 
-$field_name = 'comment_refund';
+$field_name = 'refund_comment';
  
  // Make sure the field doesn't already exist.
  if (!field_info_field($field_name)) {
@@ -117,7 +117,7 @@ $field_name = 'comment_refund';
 
 function commerce_order_refund_uninstall() {
 
-	_commerce_order_refund_delete_entity_reference_field('comment_refund');
+	_commerce_order_refund_delete_entity_reference_field('refund_comment');
 	_commerce_order_refund_delete_entity_reference_field('order_refund_reference');
 
 }

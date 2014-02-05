@@ -221,7 +221,7 @@ function commerce_order_refund_execute($order, $comment) {
   commerce_order_status_update($order, 'refunded');
   //drupal_set_message("<pre> new order:" . print_r($order_wrapper, 1) . "</pre>");
 
-  return $order_wrapper->order_id;
+  return $new_order->order_id;
 }
 
 
